@@ -1,0 +1,78 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel DrawSensor
+
+#define PI 3.141592653589793238
+
+struct Agent {
+    float2 position;
+    float angle;
+};
+
+RWStructuredBuffer<Agent> agents;
+RWTexture2D<float4> pixels;
+uint width;
+uint height;
+uint numAgents;
+uint sensorOffsetDst;
+uint sensorSize;
+
+void setColorIfNotSet(int x, int y) {
+    float4 pixel = pixels[int2(x, y)];
+    float4 other = float4(0, 1, 0, 1);
+
+    if (pixel.x != other.x && pixel.y != other.y && pixel.z != other.z && pixel.w != other.w) {
+        pixels[int2(x, y)] = float4(0, 1, 0, 1);
+    }
+}
+
+void drawGreenCircle(int x_center, int y_center, uint radius) {
+    int x = radius;
+    int y = 0;
+    int error = 0;
+
+    while (x >= y) {
+        setColorIfNotSet(x_center + x, y_center + y); // upper right
+        setColorIfNotSet(x_center + y, y_center + x); // upper right
+        setColorIfNotSet(x_center - y, y_center + x); // upper left
+        setColorIfNotSet(x_center - x, y_center + y); // upper left
+        setColorIfNotSet(x_center - x, y_center - y); // lower left
+        setColorIfNotSet(x_center - y, y_center - x); // lower left
+        setColorIfNotSet(x_center + y, y_center - x); // lower right
+        setColorIfNotSet(x_center + x, y_center - y); // lower right
+
+        if (error <= 0) {
+            y += 1;
+            error += 2*y + 1;
+        }
+
+        if (error > 0) {
+            x -= 1;
+            error -= 2*x + 1;
+        }
+    }
+}
+
+void drawAgentSensor(Agent agent, float sensorAngleOffset) {
+	float sensorAngle = agent.angle + sensorAngleOffset;
+	float2 sensorDir = float2(cos(sensorAngle), sin(sensorAngle));
+
+	float2 sensorPos = agent.position + sensorDir * sensorOffsetDst;
+	int sensorCentreX = (int) sensorPos.x;
+	int sensorCentreY = (int) sensorPos.y;
+
+    drawGreenCircle(sensorCentreX, sensorCentreY, sensorSize);
+}
+
+
+[numthreads(8,1,1)]
+void DrawSensor (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= numAgents) { return; }
+
+    float sensorAngleSpacing = PI / 4.0;
+   
+    drawAgentSensor(agents[id.x], 0);
+    drawAgentSensor(agents[id.x], sensorAngleSpacing);
+    drawAgentSensor(agents[id.x], -sensorAngleSpacing);
+}
+

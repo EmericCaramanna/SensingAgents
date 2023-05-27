@@ -1,0 +1,53 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel Update
+
+#define PI 3.141592653589793238
+
+struct Agent {
+    float2 position;
+    float angle;
+};
+
+RWStructuredBuffer<Agent> agents;
+RWTexture2D<float4> TrailMap;
+uint width;
+uint height;
+uint numAgents;
+uint moveSpeed;
+float deltaTime;
+
+uint hash(uint state) {
+    state ^= 2747636419u;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    return state;
+}
+
+float scaleToRange01(uint value) {
+    return (float)value / 4294967295.0; // max value of uint
+}
+
+[numthreads(8,1,1)]
+void Update (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= numAgents) { return; }
+
+    Agent agent = agents[id.x];
+    uint random = hash(agent.position.y * width + agent.position.x + hash(id.x));
+
+    float2 direction = float2(cos(agent.angle), sin(agent.angle));
+    float2 newPos = agent.position + direction * moveSpeed * deltaTime;
+
+    if (newPos.x < 0 || newPos.x >= width || newPos.y < 0 || newPos.y >= height) {
+        newPos.x = min(width-0.01, max(0, newPos.x));
+        newPos.y = min(height-0.01, max(0, newPos.y));
+        agents[id.x].angle = scaleToRange01(random) * 2 * PI;
+    }
+
+    agents[id.x].position = newPos;
+    TrailMap[int2(newPos.x, newPos.y)] = 1;
+}
+
