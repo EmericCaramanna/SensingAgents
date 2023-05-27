@@ -6,34 +6,36 @@
 RWTexture2D<float4> TrailMap;
 float evaporateSpeed;
 float diffuseSpeed;
-uint width;
-uint height;
+int width;
+int height;
 float deltaTime;
 
 [numthreads(8,8,1)]
 void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x < 0 || id.x >= width || id.y < 0 || id.y >= height) {
+    if (id.x < 0 || id.x >= (uint)width || id.y < 0 || id.y >= (uint)height) {
         return;
     }
 
     float4 originalValue = TrailMap[id.xy];
 
     float4 sum = 0;
+    int samples = 0;
     for (int offsetx = -1; offsetx <= 1; offsetx++) {
         for (int offsety = -1; offsety <= 1; offsety++) {
-            uint sampleX = id.x + offsetx;
-            uint sampleY = id.y + offsety;
-            if (sampleX < width && sampleY < height) {
+            int sampleX = id.x + offsetx;
+            int sampleY = id.y + offsety;
+            if (sampleX >= 0 && sampleX < width && sampleY >= 0 && sampleY < height) {
                 sum += TrailMap[int2(sampleX,sampleY)];
+                samples++;
             }
         }
     }
 
-
-    float4 blurResult = sum / 9;
+    float4 blurResult = sum / samples;
     float4 diffusedValue = lerp(originalValue, blurResult, diffuseSpeed * deltaTime);
     float4 diffusedAndEvaporatedValue = max(0, diffusedValue - evaporateSpeed * deltaTime);
 
     TrailMap[id.xy] = diffusedAndEvaporatedValue;
 }
+

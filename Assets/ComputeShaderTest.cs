@@ -35,8 +35,10 @@ public class ComputeShaderTest : MonoBehaviour
             agents[i].position.x = width / 2;
             agents[i].position.y = height / 2;
             agents[i].angle = Random.Range(0, 2 * Mathf.PI);
+            // if (i < 100) {
+            //     agents[i].debug = 1;
+            // }
         }
-
         // Transfer data to compute buffer after updating the agents array
         agentBuffer.SetData(agents);
     }
@@ -49,17 +51,17 @@ public class ComputeShaderTest : MonoBehaviour
             renderTexture.Create();
         }
 
-        if (debug) {
-            debugShader.SetTexture(0, "pixels", renderTexture);
-            debugShader.SetInt("width", renderTexture.width);
-            debugShader.SetInt("height", renderTexture.height);
-            debugShader.SetInt("numAgents", numAgents);
-            debugShader.SetInt("sensorOffsetDst", sensorOffsetDst);
-            debugShader.SetInt("sensorSize", sensorSize);
-            agentBuffer.SetData(agents);
-            debugShader.SetBuffer(0, "agents", agentBuffer);
-            debugShader.Dispatch(0, agents.Length / 8, 1, 1);
-        }
+        // if (debug) {
+        //     debugShader.SetTexture(0, "pixels", renderTexture);
+        //     debugShader.SetInt("width", renderTexture.width);
+        //     debugShader.SetInt("height", renderTexture.height);
+        //     debugShader.SetInt("numAgents", numAgents);
+        //     debugShader.SetInt("sensorOffsetDst", sensorOffsetDst);
+        //     debugShader.SetInt("sensorSize", sensorSize);
+        //     agentBuffer.SetData(agents);
+        //     debugShader.SetBuffer(0, "agents", agentBuffer);
+        //     debugShader.Dispatch(0, agents.Length / 8, 1, 1);
+        // }
         computeShader.SetTexture(0, "TrailMap", renderTexture);
         computeShader.SetInt("width", renderTexture.width);
         computeShader.SetInt("height", renderTexture.height);
@@ -98,6 +100,7 @@ public class ComputeShaderTest : MonoBehaviour
     {
         public Vector2 position;
 		public float angle;
+        public int debug;
     }
 
     private void OnDisable() {

@@ -6,19 +6,20 @@
 struct Agent {
     float2 position;
     float angle;
+    int debug;
 };
 
 RWStructuredBuffer<Agent> agents;
 RWTexture2D<float4> TrailMap;
-uint width;
-uint height;
+int width;
+int height;
 uint numAgents;
 uint moveSpeed;
 float deltaTime;
 float turnSpeed;
 float degreeFOV;
 uint sensorOffsetDst;
-uint sensorSize;
+int sensorSize;
 
 uint hash(uint state) {
     state ^= 2747636419u;
@@ -62,7 +63,8 @@ void Update (uint3 id : SV_DispatchThreadID)
     if (id.x >= numAgents) { return; }
 
     uint random = hash(agents[id.x].position.y * width + agents[id.x].position.x + hash(id.x));
-    float sensorAngleSpacing = PI / 4.0;
+    float degreeToRadian = PI / 180.0;
+    float sensorAngleSpacing = degreeFOV * degreeToRadian;
 
     float weightForward = sense(agents[id.x], 0);
     float weightLeft = sense(agents[id.x], sensorAngleSpacing);
@@ -90,6 +92,6 @@ void Update (uint3 id : SV_DispatchThreadID)
     }
 
     agents[id.x].position = newPos;
-    TrailMap[int2(newPos.x, newPos.y)] = 1;
+    TrailMap[int2(newPos.x, newPos.y)] = (agents[id.x].debug) ? float4(1, 0, 0, 1) : 1;
 }
 
