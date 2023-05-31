@@ -21,26 +21,72 @@ public class ComputeShaderTest : MonoBehaviour
     public float degreeFOV;
     public int sensorOffsetDst;
     public int sensorSize;
-    public bool debug = true;
+    public BaseShape shape;
 
     private Agent[] agents;
 
     // Start is called before the first frame update
     void Start()
     {
+        agentBuffer = new ComputeBuffer(numAgents, Marshal.SizeOf(typeof(Agent)));
         agents = new Agent[numAgents];
-        agentBuffer = new ComputeBuffer(agents.Length, Marshal.SizeOf(typeof(Agent)));
-        for (int i = 0; i < agents.Length; i++) // change to for loop
+
+        switch (shape)
         {
-            agents[i].position.x = width / 2;
-            agents[i].position.y = height / 2;
-            agents[i].angle = Random.Range(0, 2 * Mathf.PI);
-            // if (i < 100) {
-            //     agents[i].debug = 1;
-            // }
+            case BaseShape.CENTER:
+                InitializeAgentsCenter();
+                break;
+            case BaseShape.CIRCLE:
+                InitializeAgentsCircle();
+                break;
+            case BaseShape.RANDOM:
+                InitializeAgentsRandom();
+                break;
         }
-        // Transfer data to compute buffer after updating the agents array
+
         agentBuffer.SetData(agents);
+    }
+
+    void InitializeAgentsCenter()
+    {
+        Vector2 center = new Vector2(width / 2, height / 2);
+
+        for (int i = 0; i < numAgents; i++)
+        {
+            agents[i] = new Agent
+            {
+                position = center,
+                angle = Random.Range(0, 2 * Mathf.PI)
+            };
+        }
+    }
+
+    void InitializeAgentsCircle()
+    {
+        float rad;
+        for (int i = 0; i < numAgents; i++)
+        {
+            rad = Random.Range(0, height / 4);
+            float angle = Random.Range(0, 2 * Mathf.PI);
+
+            agents[i] = new Agent
+            {
+                position = new Vector2(width / 2 - rad * Mathf.Cos(angle), height / 2 - rad * Mathf.Sin(angle)),
+                angle = angle
+            };
+        }
+    }
+
+    void InitializeAgentsRandom()
+    {
+        for (int i = 0; i < numAgents; i++)
+        {
+            agents[i] = new Agent
+            {
+                position = new Vector2(Random.Range(0, width - 1), Random.Range(0, height - 1)),
+                angle = Random.Range(0, 2 * Mathf.PI)
+            };
+        }
     }
 
 
@@ -49,6 +95,7 @@ public class ComputeShaderTest : MonoBehaviour
             renderTexture = new RenderTexture(width, height, 24);
             renderTexture.enableRandomWrite = true;
             renderTexture.Create();
+            return ;
         }
 
         // if (debug) {
@@ -74,7 +121,7 @@ public class ComputeShaderTest : MonoBehaviour
         computeShader.SetFloat("degreeFOV", degreeFOV);
         agentBuffer.SetData(agents);
         computeShader.SetBuffer(0, "agents", agentBuffer);
-        computeShader.Dispatch(0, agents.Length / 8, 1, 1);
+        computeShader.Dispatch(0, agents.Length / 512, 1, 1);
         agentBuffer.GetData(agents);
 
         trailShader.SetTexture(0, "TrailMap", renderTexture);
@@ -83,7 +130,7 @@ public class ComputeShaderTest : MonoBehaviour
         trailShader.SetFloat("evaporateSpeed", evaporateSpeed);
         trailShader.SetFloat("diffuseSpeed", diffuseSpeed);
         trailShader.SetFloat("deltaTime", Time.fixedDeltaTime);
-        trailShader.Dispatch(0, renderTexture.width / 8, renderTexture.height / 8, 1);
+        trailShader.Dispatch(0, renderTexture.width / 16, renderTexture.height / 16, 1);
     }
 
     // Update is called once per frame
@@ -101,6 +148,13 @@ public class ComputeShaderTest : MonoBehaviour
         public Vector2 position;
 		public float angle;
         public int debug;
+    }
+
+    public enum BaseShape
+    {
+        CENTER,
+        CIRCLE,
+        RANDOM
     }
 
     private void OnDisable() {

@@ -318,14 +318,14 @@ MonoBehaviour:
   trailShader: {fileID: 7200000, guid: 5ee7315acf97a42438d68127fbc65eab, type: 3}
   debugShader: {fileID: 7200000, guid: 699313dbd10f60b46bd939fa79ac218e, type: 3}
   renderTexture: {fileID: 0}
-  numAgents: 100000
+  numAgents: 1000000
   moveSpeed: 50
   evaporateSpeed: 0.3
-  diffuseSpeed: 1
+  diffuseSpeed: 5
   width: 1920
   height: 1080
   turnSpeed: 50
   degreeFOV: 45
   sensorOffsetDst: 5
   sensorSize: 1
-  debug: 1
+  shape: 1

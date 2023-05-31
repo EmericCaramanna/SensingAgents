@@ -10,7 +10,7 @@ int width;
 int height;
 float deltaTime;
 
-[numthreads(8,8,1)]
+[numthreads(16,16,1)]
 void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
 {
     if (id.x < 0 || id.x >= (uint)width || id.y < 0 || id.y >= (uint)height) {
